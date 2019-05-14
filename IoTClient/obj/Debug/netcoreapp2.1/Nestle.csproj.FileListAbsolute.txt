@@ -1,0 +1,11 @@
+C:\temp\Nestle\IoTClient\obj\Debug\netcoreapp2.1\Nestle.csprojAssemblyReference.cache
+C:\temp\Nestle\IoTClient\obj\Debug\netcoreapp2.1\Nestle.csproj.CoreCompileInputs.cache
+C:\temp\Nestle\IoTClient\obj\Debug\netcoreapp2.1\Nestle.AssemblyInfoInputs.cache
+C:\temp\Nestle\IoTClient\obj\Debug\netcoreapp2.1\Nestle.AssemblyInfo.cs
+C:\temp\Nestle\IoTClient\bin\Debug\netcoreapp2.1\Nestle.deps.json
+C:\temp\Nestle\IoTClient\bin\Debug\netcoreapp2.1\Nestle.runtimeconfig.json
+C:\temp\Nestle\IoTClient\bin\Debug\netcoreapp2.1\Nestle.runtimeconfig.dev.json
+C:\temp\Nestle\IoTClient\bin\Debug\netcoreapp2.1\Nestle.dll
+C:\temp\Nestle\IoTClient\bin\Debug\netcoreapp2.1\Nestle.pdb
+C:\temp\Nestle\IoTClient\obj\Debug\netcoreapp2.1\Nestle.dll
+C:\temp\Nestle\IoTClient\obj\Debug\netcoreapp2.1\Nestle.pdb
