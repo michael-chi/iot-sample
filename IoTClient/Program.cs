@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
-
+using Microsoft.Azure.Devices.Shared;
 namespace Nestle
 {
     class Program
@@ -65,23 +65,36 @@ namespace Nestle
             task.Wait();
             var device = task.Result as Device;
 
+            //  Register Desired Property
+            Task.Run( () => RegisterDesiredPropertyHandlerAsync(device, _appSettings.IoTHubUrl)).Wait();
             //  Register Direct Method
-            Task.Run(() => RegisterDirectMethodAsync(device, _appSettings.IoTHubUrl)).Wait();
+            Task.Run(() => RegisterDirectMethodAsync(device)).Wait();
 
             //  Start Sending and Receiving Threads
             List<Task> tasks = new List<Task>();
-            tasks.Add(SendD2CMessageTask(device, _appSettings.IoTHubUrl, "this is a sample"));
-            tasks.Add(ReceiveD2CMessageTask(device, _appSettings.IoTHubUrl));
+            tasks.Add(SendD2CMessageTask(device, "this is a sample"));
+            tasks.Add(ReceiveD2CMessageTask(device));
 
             Task.WaitAll(tasks.ToArray());
 
             Logger.Info("Running...");
             Console.ReadLine();
         }
+        //  Create Device Client
+        private static DeviceClient CreateDeviceClient(string url, string id, string key){
+            DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(id, key),
+                Microsoft.Azure.Devices.Client.TransportType.Mqtt);
+
+            return client;
+        }
+        //  Register Desired Property Handler
+        private static async Task RegisterDesiredPropertyHandlerAsync(Device device, string url){
+            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+            await client.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChanged, device).ConfigureAwait(false);
+        }
         //  Register Direct Method
-        private static async Task RegisterDirectMethodAsync(Device device, String url){
-            DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(device.Id, device.Authentication.SymmetricKey.SecondaryKey),
-                            Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
+        private static async Task RegisterDirectMethodAsync(Device device){
+            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
             await client.SetMethodHandlerAsync("SetTelemetryInterval", SetTelemetryInterval, null);
         }
         //  Read AppSettings.Json
@@ -94,25 +107,23 @@ namespace Nestle
                 .Build();
         }
         //  Send D2C message
-        private static async Task SendD2CMessageTask(Device device, string url, string text){
+        private static async Task SendD2CMessageTask(Device device, string text){
             while(true){
-                await SendD2CMessageAsync(device, url, text);
+                await SendD2CMessageAsync(device, text);
                 Task.Delay(1000 * 3);
             }
         }
         //  Sending thread - sends D2C messages to IoT Hub
-        private static async Task SendD2CMessageAsync(Device device, string url, string text){
-            DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(device.Id, device.Authentication.SymmetricKey.SecondaryKey),
-                            Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
+        private static async Task SendD2CMessageAsync(Device device, string text){
+            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
             var msg = new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes(text));
             msg.Properties.Add("ClientTime", DateTime.UtcNow.ToString());
             Logger.Info($"Sending {text}...");   
             await client.SendEventAsync(msg);
         }
         //  Receiving thread - receives C2D messages from IoT Hub
-        private static async Task ReceiveD2CMessageTask(Device device, string url){
-            DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(device.Id, device.Authentication.SymmetricKey.SecondaryKey),
-                            Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
+        private static async Task ReceiveD2CMessageTask(Device device){
+            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
             while(true){
                 var message = await client.ReceiveAsync();
                 if(message != null){
@@ -129,10 +140,31 @@ namespace Nestle
         //  Direct Method Handler
         private static Task<MethodResponse> SetTelemetryInterval(MethodRequest methodRequest, object userContext)
         {
-            var data = Encoding.UTF8.GetString(methodRequest.Data);
-            Logger.Info($"Received Direct Method Call[{data}]");
+            try{
+                var data = Encoding.UTF8.GetString(methodRequest.Data);
+                Logger.Info($"Received Direct Method Call[{data}]");
 
-            return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes("OK"), 200));
+                return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes("{\"Status\":\"OK\"}"), 200));
+            }
+            catch(Exception exp){
+                Logger.Error($"Exception Direct Method:{exp.Message}");
+                return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes($"{exp.Message}"), 500));
+            }
+        }
+
+        //  Desired Property Handler
+        private static async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object userContext)
+        {
+            Logger.Info("\tDesired property changed:");
+            Logger.Info($"\t{desiredProperties.ToJson()}");
+            Device device = userContext as Device;
+            Logger.Info("\tSending current time as reported property");
+            TwinCollection reportedProperties = new TwinCollection();
+            reportedProperties["DateTimeLastDesiredPropertyChangeReceived"] = DateTime.Now;
+            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+            
+            //  Update Reported Properties
+            await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
         }
     }
 }
