@@ -148,7 +148,7 @@ namespace Nestle
             }
             catch(Exception exp){
                 Logger.Error($"Exception Direct Method:{exp.Message}");
-                return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes($"{exp.Message}"), 500));
+                return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes($"Exception:{exp.Message}"), 500));
             }
         }
 
