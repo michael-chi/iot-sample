@@ -78,11 +78,13 @@ namespace Nestle
             Logger.Info("Running...");
             Console.ReadLine();
         }
+        //  Register Direct Method
         private static async Task RegisterDirectMethodAsync(Device device, String url){
             DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(device.Id, device.Authentication.SymmetricKey.SecondaryKey),
                             Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
             await client.SetMethodHandlerAsync("SetTelemetryInterval", SetTelemetryInterval, null);
         }
+        //  Read AppSettings.Json
         public static IConfigurationRoot ReadFromAppSettings()
         {
             return new ConfigurationBuilder()
@@ -91,12 +93,14 @@ namespace Nestle
                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("NETCORE_ENVIRONMENT")}.json", optional: true)
                 .Build();
         }
+        //  Send D2C message
         private static async Task SendD2CMessageTask(Device device, string url, string text){
             while(true){
                 await SendD2CMessageAsync(device, url, text);
                 Task.Delay(1000 * 3);
             }
         }
+        //  Sending thread - sends D2C messages to IoT Hub
         private static async Task SendD2CMessageAsync(Device device, string url, string text){
             DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(device.Id, device.Authentication.SymmetricKey.SecondaryKey),
                             Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
@@ -105,6 +109,7 @@ namespace Nestle
             Logger.Info($"Sending {text}...");   
             await client.SendEventAsync(msg);
         }
+        //  Receiving thread - receives C2D messages from IoT Hub
         private static async Task ReceiveD2CMessageTask(Device device, string url){
             DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(device.Id, device.Authentication.SymmetricKey.SecondaryKey),
                             Microsoft.Azure.Devices.Client.TransportType.Mqtt_WebSocket_Only);
@@ -113,12 +118,15 @@ namespace Nestle
                 if(message != null){
                     var messageData = Encoding.ASCII.GetString(message.GetBytes());
                     Logger.Info($"Received Message {messageData}");
+
+                    await client.CompleteAsync(message);
                 }
 
                 await Task.Delay(1000 * 3);
             }
         }
 
+        //  Direct Method Handler
         private static Task<MethodResponse> SetTelemetryInterval(MethodRequest methodRequest, object userContext)
         {
             var data = Encoding.UTF8.GetString(methodRequest.Data);

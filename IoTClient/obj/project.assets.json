@@ -5999,9 +5999,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\temp\\Nestle\\IoTClient\\Nestle.csproj",
-      "projectName": "Nestle",
-      "projectPath": "C:\\temp\\Nestle\\IoTClient\\Nestle.csproj",
+      "projectUniqueName": "C:\\temp\\Nestle\\IoTClient\\IoTClient.csproj",
+      "projectName": "IoTClient",
+      "projectPath": "C:\\temp\\Nestle\\IoTClient\\IoTClient.csproj",
       "packagesPath": "C:\\Users\\michi\\.nuget\\packages\\",
       "outputPath": "C:\\temp\\Nestle\\IoTClient\\obj\\",
       "projectStyle": "PackageReference",
