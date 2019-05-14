@@ -155,8 +155,7 @@ namespace Nestle
         //  Desired Property Handler
         private static async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object userContext)
         {
-            Logger.Info("\tDesired property changed:");
-            Logger.Info($"\t{desiredProperties.ToJson()}");
+            Logger.Info($"\tDesired property changed:{desiredProperties.ToJson()}");
             Device device = userContext as Device;
             Logger.Info("\tSending current time as reported property");
             TwinCollection reportedProperties = new TwinCollection();
