@@ -24,7 +24,16 @@ dotnet add package Microsoft.Extensions.Configuration.Binder -version 1.17.0
 
 Run Sample
 ==========
+-   Add AppSettings.Json with below configuration
 
+```json
+{
+    "IoTHubOwnerConnectionString":  "<IoT Hub Owner Connection String>" ,
+    "IoTHubUrl":"<IoT Hub URL>"
+}
+```
+
+-   Build and Run this sample
 ```shell
 cd IoTClient
 dotnet restore
