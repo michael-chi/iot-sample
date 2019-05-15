@@ -27,13 +27,17 @@ namespace Nestle
             Device device;
             try
             {
-                device = await registryManager.AddDeviceAsync(new Device(deviceId));
+                device = await registryManager.GetDeviceAsync(deviceId);
+
+                if(device == null){
+                    device = await registryManager.AddDeviceAsync(new Device(deviceId));
+                }
             }
             catch (DeviceAlreadyExistsException)
             {
-                device = await registryManager.GetDeviceAsync(deviceId);
+                device = await registryManager.GetDeviceAsync(deviceId);  
+                Logger.Error($"device id {deviceId} : {device.Authentication.SymmetricKey.SecondaryKey}");
             }
-            Console.WriteLine($"device id {deviceId} : {device.Authentication.SymmetricKey.SecondaryKey}");
             return device;
         }
         
@@ -108,31 +112,49 @@ namespace Nestle
         }
         //  Send D2C message
         private static async Task SendD2CMessageTask(Device device, string text){
-            while(true){
+            while(true)
+            {
                 await SendD2CMessageAsync(device, text);
                 Task.Delay(1000 * 3);
             }
         }
         //  Sending thread - sends D2C messages to IoT Hub
         private static async Task SendD2CMessageAsync(Device device, string text){
-            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
-            var msg = new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes(text));
-            msg.Properties.Add("ClientTime", DateTime.UtcNow.ToString());
-            Logger.Info($"Sending {text}...");   
-            await client.SendEventAsync(msg);
+            try
+            {
+                DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+                var msg = new Microsoft.Azure.Devices.Client.Message(Encoding.UTF8.GetBytes(text));
+                msg.Properties.Add("ClientTime", DateTime.UtcNow.ToString());
+                Logger.Info($"[{device.Id}]Sending {text}...");   
+                await client.SendEventAsync(msg);
+            }
+            catch(Exception exp){
+                Logger.Error($"[{device.Id}]Exception while calling SendD2CMessageAsync():[{exp.Message}]");
+            }
         }
         //  Receiving thread - receives C2D messages from IoT Hub
         private static async Task ReceiveD2CMessageTask(Device device){
             DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
-            while(true){
-                var message = await client.ReceiveAsync();
-                if(message != null){
-                    var messageData = Encoding.ASCII.GetString(message.GetBytes());
-                    Logger.Info($"Received Message {messageData}");
+            while(true)
+            {
+                try
+                {
+                    Logger.Info($"[{device.Id}]Receiving C2D message...");
+                    var message = await client.ReceiveAsync(TimeSpan.FromSeconds(3));
+                    if(message != null){
+                        var messageData = Encoding.ASCII.GetString(message.GetBytes());
+                        Logger.Info($"[{device.Id}]Received Message {messageData}");
 
-                    await client.CompleteAsync(message);
+                        await client.CompleteAsync(message);
+                    }
+                    else
+                    {
+                        Logger.Info("$[{device.Id}]No incoming C2D messages");
+                    }
                 }
-
+                catch(Exception exp){
+                    Logger.Error($"[{device.Id}]Exception while calling ReceiveD2CMessageTask():[{exp.Message}]");
+                }
                 await Task.Delay(1000 * 3);
             }
         }
