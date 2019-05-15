@@ -14,10 +14,12 @@ using Microsoft.Azure.Devices.Shared;
 using CommandLine;
 public class DeviceTwinJob{
     private string _deviceId = null;
-    static JobClient _jobClient;
-    AppSettings _appsettings = null;
+    private JobClient _jobClient;
+    private AppSettings _appsettings = null;
+    private TwinPropertyOptions _opts = null;
     public DeviceTwinJob(TwinPropertyOptions opts, AppSettings appsettings){
         _deviceId = opts.Query;
+        _opts = opts;
         _appsettings = appsettings;
         if(_jobClient == null){
             _jobClient = JobClient.CreateFromConnectionString(appsettings.IoTHubOwnerConnectionString);
@@ -61,8 +63,8 @@ public class DeviceTwinJob{
 
         return jobId;
     }
-    public async Task<int> RunTwinJobAsync(TwinPropertyOptions opts){
-        var jobId = StartTwinUpdateJob(opts);
+    public async Task<int> RunTwinJobAsync(){
+        var jobId = StartTwinUpdateJob(_opts);
 
         //  TODO:
         await JobMonitor.MonitorAsync(_appsettings, jobId);

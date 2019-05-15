@@ -41,12 +41,12 @@ namespace DeviceJob
             CommandLine.Parser.Default.ParseArguments<DirectMethodOptions, TwinPropertyOptions>(args)
                 .WithParsed<DirectMethodOptions>(opts => 
                 {
-                    var task = Task.Run(async () => await new DirectMethodJob(opts, _appSettings).RunDirectMethodAsync(opts));
+                    var task = Task.Run(async () => await new DirectMethodJob(opts, _appSettings).RunDirectMethodAsync());
                     task.Wait();
                 })
                 .WithParsed<TwinPropertyOptions>(opts => 
                 {
-                    var task = Task.Run(async () => await new DeviceTwinJob(opts, _appSettings).RunTwinJobAsync(opts));
+                    var task = Task.Run(async () => await new DeviceTwinJob(opts, _appSettings).RunTwinJobAsync());
                     task.Wait();
                 })                        
                 .WithNotParsed(errs => {

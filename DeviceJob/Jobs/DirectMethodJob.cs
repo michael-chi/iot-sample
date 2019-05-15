@@ -42,20 +42,12 @@ public class DirectMethodJob
         Logger.Info($"[{jobId}]{result.Status}");
     }
 
-    public async Task<int> RunDirectMethodAsync(DirectMethodOptions opts){
-        var jobId = await StartMethodJobAsync(opts);
+    public async Task<int> RunDirectMethodAsync(){
+        var jobId = Guid.NewGuid().ToString();
+        Task jobTask = Task.Run(() =>  StartMethodJob(jobId));
 
-        //  TODO:
-        Task task = Task.Run(() => JobMonitor.MonitorAsync(_appsettings, jobId));
-        task.Wait();
+        Task monitorTask = Task.Run(() => JobMonitor.MonitorAsync(_appsettings, jobId));
+        Task.WaitAll(jobTask, monitorTask);
         return 0;
     } 
-    private async Task<string> StartMethodJobAsync(DirectMethodOptions opts)
-    {
-        var jobId = Guid.NewGuid().ToString();
-        DirectMethodJob job = new DirectMethodJob(opts, _appsettings);
-        await job.StartMethodJob(jobId);
-
-        return jobId;
-    }
 }
