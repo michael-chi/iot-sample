@@ -18,6 +18,7 @@ namespace Nestle
     {
         //  Local Variables
         private static AppSettings _appSettings = null;
+        private static DeviceClient _client = null;
 
         //  Ensure device exists in IoT Hub, if not exist, create one.
         //  Returns Device reference
@@ -86,10 +87,11 @@ namespace Nestle
         }
         //  Create Device Client
         private static DeviceClient CreateDeviceClient(string url, string id, string key){
-            DeviceClient client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(id, key),
-                Microsoft.Azure.Devices.Client.TransportType.Mqtt);
-
-            return client;
+            if(_client == null){
+                _client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(id, key),
+                    Microsoft.Azure.Devices.Client.TransportType.Mqtt);
+            }
+            return _client;
         }
         //  Register Desired Property Handler
         private static async Task RegisterDesiredPropertyHandlerAsync(Device device, string url){
@@ -115,7 +117,7 @@ namespace Nestle
             while(true)
             {
                 await SendD2CMessageAsync(device, text);
-                Task.Delay(1000 * 3);
+                await Task.Delay(1000 * 3);
             }
         }
         //  Sending thread - sends D2C messages to IoT Hub
@@ -135,21 +137,18 @@ namespace Nestle
         //  Receiving thread - receives C2D messages from IoT Hub
         private static async Task ReceiveD2CMessageTask(Device device){
             DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+            Logger.Info($"[{device.Id}]Receiving C2D message...");
+
             while(true)
             {
                 try
                 {
-                    Logger.Info($"[{device.Id}]Receiving C2D message...");
                     var message = await client.ReceiveAsync(TimeSpan.FromSeconds(3));
                     if(message != null){
                         var messageData = Encoding.ASCII.GetString(message.GetBytes());
                         Logger.Info($"[{device.Id}]Received Message {messageData}");
 
                         await client.CompleteAsync(message);
-                    }
-                    else
-                    {
-                        Logger.Info("$[{device.Id}]No incoming C2D messages");
                     }
                 }
                 catch(Exception exp){
