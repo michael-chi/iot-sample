@@ -15,9 +15,10 @@ using CommandLine;
 public class DeviceTwinJob{
     private string _deviceId = null;
     static JobClient _jobClient;
+    AppSettings _appsettings = null;
     public DeviceTwinJob(TwinPropertyOptions opts, AppSettings appsettings){
         _deviceId = opts.Query;
-
+        _appsettings = appsettings;
         if(_jobClient == null){
             _jobClient = JobClient.CreateFromConnectionString(appsettings.IoTHubOwnerConnectionString);
         }
@@ -25,13 +26,31 @@ public class DeviceTwinJob{
     public string StartTwinUpdateJob(TwinPropertyOptions opts)
     {
         string jobId = Guid.NewGuid().ToString();
-        Twin twin = new Twin(opts.DeviceId);
-        // twin.Tags = new TwinCollection();
-        // twin.Tags["Building"] = "43";
-        // twin.Tags["Floor"] = "3";
-        // twin.ETag = "*";
+        Twin twin = new Twin();
+        twin.Tags = new TwinCollection();
 
-        twin.Properties.Desired["LocationUpdate"] = DateTime.UtcNow;
+        if(!string.IsNullOrEmpty(opts.Values)){
+            TwinProperty [] properties = JsonConvert.DeserializeObject<TwinProperty []>(opts.Values);
+
+            switch(opts.PropertyType){
+                    case "Tags":
+                        foreach(var property in properties){
+                            Logger.Info($"Setting Tags:{property.Name}={property.Value}");
+                            twin.Tags[property.Name] = property.Value;
+                        }
+                        break;
+                    case "DesiredProperty":
+                        foreach(var property in properties){
+                            Logger.Info($"Setting DesiredProperty:{property.Name}={property.Value}");
+                            twin.Properties.Desired[property.Name] = property.Value;
+                        }
+                        break;
+                    default:
+                        Logger.Error($"Unknown option:{opts.PropertyType}");
+                        break;
+                }
+            
+        }
 
         JobResponse createJobResponse = _jobClient.ScheduleTwinUpdateAsync(
             jobId,
@@ -43,13 +62,11 @@ public class DeviceTwinJob{
         return jobId;
     }
     public async Task<int> RunTwinJobAsync(TwinPropertyOptions opts){
-        var jobId = await StartTwinUpdateAsync(opts);
+        var jobId = StartTwinUpdateJob(opts);
 
         //  TODO:
+        await JobMonitor.MonitorAsync(_appsettings, jobId);
         return 0;
     } 
-    private Task<string> StartTwinUpdateAsync(TwinPropertyOptions opts)
-    {
-        return Task.FromResult(String.Empty);
-    }
+
 }

@@ -59,6 +59,12 @@ dotnet run directmethod -q "FROM devices WHERE DeviceId='test001'" -t 5 -m SetTe
 dotnet run directmethod -q "FROM devices WHERE Properties.Desired.Test=123" -t 5 -m SetTelemetryInterval -b test123
 ```
 
+-   Update Device Twins
+
+`shell
+dotnet run twin -q "FROM devices WHERE properties.desired.test=123" -t 5 --type DesiredProperty -s [{\"Name\":\"property001\",\"Value\":\"12\"}]
+```
+
 References
 ==========
 
