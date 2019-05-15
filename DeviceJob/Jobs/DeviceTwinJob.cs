@@ -2,8 +2,6 @@ using System;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Shared;
 using Newtonsoft.Json;
-using Newtonsoft.Json;
-using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Common.Exceptions;
 using Microsoft.Azure.Devices;
 using System.IO;
@@ -25,7 +23,7 @@ public class DeviceTwinJob{
             _jobClient = JobClient.CreateFromConnectionString(appsettings.IoTHubOwnerConnectionString);
         }
     }
-    public async Task<string> StartTwinUpdateJobAsync(TwinPropertyOptions opts)
+    public string StartTwinUpdateJob(TwinPropertyOptions opts)
     {
         string jobId = Guid.NewGuid().ToString();
         Twin twin = new Twin(opts.DeviceId);
@@ -51,8 +49,8 @@ public class DeviceTwinJob{
         //  TODO:
         return 0;
     } 
-    private async Task<string> StartTwinUpdateAsync(TwinPropertyOptions opts)
+    private Task<string> StartTwinUpdateAsync(TwinPropertyOptions opts)
     {
-        return "";
+        return Task.FromResult(String.Empty);
     }
 }

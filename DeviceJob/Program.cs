@@ -40,18 +40,19 @@ namespace DeviceJob
 
             CommandLine.Parser.Default.ParseArguments<DirectMethodOptions, TwinPropertyOptions>(args)
                 .WithParsed<DirectMethodOptions>(opts => 
-                        {
-                            var task = Task.Run(async () => await new DirectMethodJob(opts, _appSettings).RunDirectMethodAsync(opts));
-                            task.Wait();
-                        })
+                {
+                    var task = Task.Run(async () => await new DirectMethodJob(opts, _appSettings).RunDirectMethodAsync(opts));
+                    task.Wait();
+                })
                 .WithParsed<TwinPropertyOptions>(opts => 
-                        {
-                            var task = Task.Run(async () => await new DeviceTwinJob(opts, _appSettings).RunTwinJobAsync(opts));
-                            task.Wait();
-                        })                        
+                {
+                    var task = Task.Run(async () => await new DeviceTwinJob(opts, _appSettings).RunTwinJobAsync(opts));
+                    task.Wait();
+                })                        
                 .WithNotParsed(errs => {
-                        return 1;
-                    });
+
+                    Logger.Error($"Error:{JsonConvert.SerializeObject(errs)}");
+                });
             Console.ReadLine();
         }
     }

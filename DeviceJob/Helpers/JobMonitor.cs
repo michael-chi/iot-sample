@@ -2,8 +2,6 @@ using System;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Shared;
 using Newtonsoft.Json;
-using Newtonsoft.Json;
-using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Common.Exceptions;
 using Microsoft.Azure.Devices;
 using System.IO;
@@ -13,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
-using Microsoft.Azure.Devices.Shared;
 public class JobMonitor{
     public static async Task MonitorAsync(AppSettings appsettings, string jobId){
         JobResponse result;
