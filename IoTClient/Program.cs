@@ -71,7 +71,7 @@ namespace Nestle
             var device = task.Result as Device;
 
             //  Register Desired Property
-            Task.Run( () => RegisterDesiredPropertyHandlerAsync(device, _appSettings.IoTHubUrl)).Wait();
+            Task.Run(() => RegisterDesiredPropertyHandlerAsync(device, _appSettings.IoTHubUrl)).Wait();
             //  Register Direct Method
             Task.Run(() => RegisterDirectMethodAsync(device)).Wait();
 
@@ -180,7 +180,15 @@ namespace Nestle
             Device device = userContext as Device;
             Logger.Info("\tSending current time as reported property");
             TwinCollection reportedProperties = new TwinCollection();
-            reportedProperties["DateTimeLastDesiredPropertyChangeReceived"] = DateTime.Now;
+            reportedProperties["status_updated_time"] = DateTime.Now;
+            reportedProperties["status_updated"] = true;
+
+            if(new Random().Next(1, 100) >= 80){
+                reportedProperties["status"] = "ok";
+            }else{
+                reportedProperties["status"] = "failed";
+            }
+            
             DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
             
             //  Update Reported Properties
