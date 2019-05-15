@@ -61,7 +61,7 @@ dotnet run directmethod -q "FROM devices WHERE Properties.Desired.Test=123" -t 5
 
 -   Update Device Twins
 
-`shell
+```shell
 dotnet run twin -q "FROM devices WHERE properties.desired.test=123" -t 5 --type DesiredProperty -s [{\"Name\":\"property001\",\"Value\":\"12\"}]
 ```
 
