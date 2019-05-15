@@ -1,6 +1,5 @@
 using System;
 using Microsoft.Azure.Devices.Client;
-using Microsoft.Azure.Devices.Shared;
 using Newtonsoft.Json;
 using Microsoft.Azure.Devices.Common.Exceptions;
 using Microsoft.Azure.Devices;

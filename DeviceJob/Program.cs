@@ -50,7 +50,6 @@ namespace DeviceJob
                     task.Wait();
                 })                        
                 .WithNotParsed(errs => {
-
                     Logger.Error($"Error:{JsonConvert.SerializeObject(errs)}");
                 });
             Console.ReadLine();
