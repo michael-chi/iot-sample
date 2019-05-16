@@ -60,19 +60,22 @@ dotnet run device001
 Device Job
 ==========
 
--   Sample command line
+This command line tool allows you to create a Device Job that invoke DirectMethod or update DesiredProperty or Tags on devices.
 
-    -   Calling a Direct Method
+## Run Sample
+
+
+-   Calling a Direct Method on a device of DeviceId equals "test001"
 
 ```shell
 dotnet run directmethod -q "FROM devices WHERE DeviceId='test001'" -t 5 -m SetTelemetryInterval -b test123
 ```
-
+-   Calling a Direct Method on devices which has desired property "Test" equals "123"
 ```
 dotnet run directmethod -q "FROM devices WHERE Properties.Desired.Test=123" -t 5 -m SetTelemetryInterval -b test123
 ```
 
--   Update Device Twins
+-   Update a set of desired properties on devices which have desired property "test" equals "123"
 
 ```shell
 dotnet run twin -q "FROM devices WHERE properties.desired.test=123" -t 5 --type DesiredProperty -s [{\"Name\":\"property001\",\"Value\":\"12\"}]

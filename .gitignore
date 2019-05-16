@@ -4,3 +4,6 @@
 **/*/obj
 bin
 obj
+**/.vscode/*
+**/.vscode
+.vscode
