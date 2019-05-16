@@ -64,6 +64,14 @@ This command line tool allows you to create a Device Job that invoke DirectMetho
 
 ## Run Sample
 
+-   Add AppSettings.Json with below configuration
+
+```json
+{
+    "IoTHubOwnerConnectionString":  "<IoT Hub Owner Connection String>" ,
+    "IoTHubUrl":"<IoT Hub URL>"
+}
+```
 
 -   Calling a Direct Method on a device of DeviceId equals "test001"
 
