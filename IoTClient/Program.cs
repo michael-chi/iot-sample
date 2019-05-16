@@ -98,6 +98,7 @@ namespace Nestle
                 _client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(id, key),
                     Microsoft.Azure.Devices.Client.TransportType.Mqtt);
                 _client.SetConnectionStatusChangesHandler(OnConnectionStatusChanged);
+                //  For testing purpose, I am using NoRetry policy, in real case, you should define your own retry policy
                 _client.SetRetryPolicy(new NoRetry());
 
                 //  Ensure Device exists in IoT Hub
