@@ -71,19 +71,12 @@ namespace Nestle
             task.Wait();
             var device = task.Result as Device;
 
-            //  Retrieve Full Twin Properties so that client device can re-configure itself based on backend configuration.
-            Task.Run(() => RetriveTwinsAsync(device)).Wait();
-
-            //  Register Desired Property
-            Task.Run(() => RegisterDesiredPropertyHandlerAsync(device, _appSettings.IoTHubUrl)).Wait();
+            CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
             
-            //  Register Direct Method
-            Task.Run(() => RegisterDirectMethodAsync(device)).Wait();
-
             //  Start Sending and Receiving Threads
             List<Task> tasks = new List<Task>();
             tasks.Add(SendD2CMessageTask(device, "this is a sample"));
-            tasks.Add(ReceiveD2CMessageTask(device));
+            tasks.Add(ReceiveC2DMessageTask(device));
 
             Task.WaitAll(tasks.ToArray());
 
@@ -101,8 +94,25 @@ namespace Nestle
         //  Create Device Client
         private static DeviceClient CreateDeviceClient(string url, string id, string key){
             if(_client == null){
+                Logger.Info("DeviceClient not exists, recreating DeviceClient object...");
                 _client = DeviceClient.Create(url, new DeviceAuthenticationWithRegistrySymmetricKey(id, key),
                     Microsoft.Azure.Devices.Client.TransportType.Mqtt);
+                _client.SetConnectionStatusChangesHandler(OnConnectionStatusChanged);
+                _client.SetRetryPolicy(new NoRetry());
+
+                //  Ensure Device exists in IoT Hub
+                var task = Task.Run(async () => await EnsureDeviceAsync(id));
+                task.Wait();
+                var device = task.Result as Device;
+
+                //  Retrieve Full Twin Properties so that client device can re-configure itself based on backend configuration.
+                Task.Run(() => RetriveTwinsAsync(device)).Wait();
+
+                //  Register Desired Property
+                Task.Run(() => RegisterDesiredPropertyHandlerAsync(device, _appSettings.IoTHubUrl)).Wait();
+                
+                //  Register Direct Method
+                Task.Run(() => RegisterDirectMethodAsync(device)).Wait();
             }
             return _client;
         }
@@ -152,15 +162,15 @@ namespace Nestle
             }
         }
         //  Receiving thread - receives C2D messages from IoT Hub
-        private static async Task ReceiveD2CMessageTask(Device device){
-            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+        private static async Task ReceiveC2DMessageTask(Device device){
             Logger.Info($"[{device.Id}]Receiving C2D message...");
-
             while(true)
             {
                 try
                 {
-                    var message = await client.ReceiveAsync(TimeSpan.FromSeconds(3));
+                    DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+
+                    var message = await client.ReceiveAsync();
                     if(message != null){
                         var messageData = Encoding.ASCII.GetString(message.GetBytes());
                         Logger.Info($"[{device.Id}]Received Message {messageData}");
@@ -169,7 +179,8 @@ namespace Nestle
                     }
                 }
                 catch(Exception exp){
-                    Logger.Error($"[{device.Id}]Exception while calling ReceiveD2CMessageTask():[{exp.Message}]");
+                    Logger.Error($"[{device.Id}]Exception while calling ReceiveC2DMessageTask():[{exp.Message}]");
+                    Logger.Error($"\r\n================\r\n{exp.StackTrace}\r\n===============");
                 }
                 await Task.Delay(1000 * 3);
             }
@@ -224,6 +235,24 @@ namespace Nestle
             
             //  Update Reported Properties
             await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+        }
+
+        //  Connection Status Changed Handler
+        public static void OnConnectionStatusChanged(ConnectionStatus status, ConnectionStatusChangeReason reason){
+            if(status != ConnectionStatus.Connected){
+                if(reason == ConnectionStatusChangeReason.No_Network ||
+                        reason == ConnectionStatusChangeReason.Retry_Expired ||
+                        reason == ConnectionStatusChangeReason.Device_Disabled ||
+                        reason == ConnectionStatusChangeReason.Bad_Credential ||
+                        reason == ConnectionStatusChangeReason.Expired_SAS_Token) {
+                    Logger.Info($"Connection status changed:{status.ToString()}");
+                    Logger.Info($"\tReason:{reason.ToString()}");
+                    Logger.Info($"==> Disposing DeviceClient");
+                    if(_client != null)
+                        _client = null;
+                }
+            }
+
         }
     }
 }
