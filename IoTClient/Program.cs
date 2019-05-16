@@ -16,10 +16,12 @@ namespace Nestle
 {
     class Program
     {
-        //  Local Variables
+        #region Local Variables declaration
         private static AppSettings _appSettings = null;
         private static DeviceClient _client = null;
+        #endregion
 
+        #region Helper Functions
         //  Ensure device exists in IoT Hub, if not exist, create one.
         //  Returns Device reference
         private static async Task<Device> EnsureDeviceAsync(string deviceId){
@@ -49,39 +51,6 @@ namespace Nestle
                 return false;
             }
             return true;
-        }
-        //  ======================================
-        //              Entry point 
-        //  ======================================
-        public static void Main(string[] args)
-        {
-            //  Initialize configuration block
-            _appSettings = ReadFromAppSettings().Get<AppSettings>();
-
-            //  Ensure args
-            if(!EnsureArgs(args)){
-                return;
-            }
-
-            //  Get Device Id from command line
-            var deviceId = args[0];
-
-            //  Ensure Device exists in IoT Hub
-            var task = Task.Run(async () => await EnsureDeviceAsync(deviceId));
-            task.Wait();
-            var device = task.Result as Device;
-
-            CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
-            
-            //  Start Sending and Receiving Threads
-            List<Task> tasks = new List<Task>();
-            tasks.Add(SendD2CMessageTask(device, "this is a sample"));
-            tasks.Add(ReceiveC2DMessageTask(device));
-
-            Task.WaitAll(tasks.ToArray());
-
-            Logger.Info("Running...");
-            Console.ReadLine();
         }
         //  Retrieve entire Twins object when connected
         private static async Task RetriveTwinsAsync(Device device){
@@ -140,6 +109,45 @@ namespace Nestle
                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("NETCORE_ENVIRONMENT")}.json", optional: true)
                 .Build();
         }
+        #endregion
+
+        #region Entry point
+        //  ======================================
+        //              Entry point 
+        //  ======================================
+        public static void Main(string[] args)
+        {
+            //  Initialize configuration block
+            _appSettings = ReadFromAppSettings().Get<AppSettings>();
+
+            //  Ensure args
+            if(!EnsureArgs(args)){
+                return;
+            }
+
+            //  Get Device Id from command line
+            var deviceId = args[0];
+
+            //  Ensure Device exists in IoT Hub
+            var task = Task.Run(async () => await EnsureDeviceAsync(deviceId));
+            task.Wait();
+            var device = task.Result as Device;
+
+            CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+            
+            //  Start Sending and Receiving Threads
+            List<Task> tasks = new List<Task>();
+            tasks.Add(SendD2CMessageTask(device, "this is a sample"));
+            tasks.Add(ReceiveC2DMessageTask(device));
+
+            Task.WaitAll(tasks.ToArray());
+
+            Logger.Info("Running...");
+            Console.ReadLine();
+        }
+        #endregion
+        
+        #region Telemetry/Device handlers
         //  Send D2C message
         private static async Task SendD2CMessageTask(Device device, string text){
             while(true)
@@ -253,7 +261,7 @@ namespace Nestle
                         _client = null;
                 }
             }
-
         }
+        #endregion
     }
 }
