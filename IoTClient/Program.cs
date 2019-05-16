@@ -70,8 +70,12 @@ namespace Nestle
             task.Wait();
             var device = task.Result as Device;
 
+            //  Retrieve Full Twin Properties so that client device can re-configure itself based on backend configuration.
+            Task.Run(() => RetriveTwinsAsync(device)).Wait();
+
             //  Register Desired Property
             Task.Run(() => RegisterDesiredPropertyHandlerAsync(device, _appSettings.IoTHubUrl)).Wait();
+            
             //  Register Direct Method
             Task.Run(() => RegisterDirectMethodAsync(device)).Wait();
 
@@ -84,6 +88,14 @@ namespace Nestle
 
             Logger.Info("Running...");
             Console.ReadLine();
+        }
+        //  Retrieve entire Twins object when connected
+        private static async Task RetriveTwinsAsync(Device device){
+            DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+            var twin = await client.GetTwinAsync();
+
+            Logger.Info("Retrieved full Twins.");
+            Logger.Info($"\t{JsonConvert.SerializeObject(twin)}");
         }
         //  Create Device Client
         private static DeviceClient CreateDeviceClient(string url, string id, string key){
