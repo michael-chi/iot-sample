@@ -50,8 +50,9 @@ namespace Nestle
             }
             return true;
         }
-
-        //  Entry point
+        //  ======================================
+        //              Entry point 
+        //  ======================================
         public static void Main(string[] args)
         {
             //  Initialize configuration block
@@ -113,7 +114,11 @@ namespace Nestle
         //  Register Direct Method
         private static async Task RegisterDirectMethodAsync(Device device){
             DeviceClient client = CreateDeviceClient(_appSettings.IoTHubUrl, device.Id, device.Authentication.SymmetricKey.SecondaryKey);
+            //  Set SetTelemetryInterval method handler
             await client.SetMethodHandlerAsync("SetTelemetryInterval", SetTelemetryInterval, null);
+
+            //  Set defailt method handler
+            await client.SetMethodDefaultHandlerAsync(DefaultMethodHandler, null);
         }
         //  Read AppSettings.Json
         public static IConfigurationRoot ReadFromAppSettings()
@@ -169,7 +174,20 @@ namespace Nestle
                 await Task.Delay(1000 * 3);
             }
         }
+        //  Default Method Handler
+        private static Task<MethodResponse> DefaultMethodHandler(MethodRequest methodRequest, object userContext)
+        {
+            try{
+                var data = Encoding.UTF8.GetString(methodRequest.Data);
+                Logger.Info($"\t>> Received Default Method Call[{data}]");
 
+                return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes("{\"Status\":\"OK\"}"), 200));
+            }
+            catch(Exception exp){
+                Logger.Error($"Exception Direct Method:{exp.Message}");
+                return Task.FromResult(new MethodResponse(Encoding.UTF8.GetBytes($"Exception:{exp.Message}"), 500));
+            }
+        }
         //  Direct Method Handler
         private static Task<MethodResponse> SetTelemetryInterval(MethodRequest methodRequest, object userContext)
         {
@@ -195,6 +213,7 @@ namespace Nestle
             reportedProperties["status_updated_time"] = DateTime.Now;
             reportedProperties["status_updated"] = true;
 
+            //  Simulate status update failed/succeed
             if(new Random().Next(1, 100) >= 80){
                 reportedProperties["status"] = "ok";
             }else{

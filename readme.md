@@ -27,7 +27,20 @@ dotnet add package Microsoft.Extensions.Configuration.Binder --version 1.17.0
 IoT Client Sample
 =================
 
+This sample client program does the following
+
+1.  Read configuration from appsettings.json
+2.  Retrieve full Twin properties so that client device can re-configure itself when needed.
+    An example of this scenario is that if the device was disconnected for a long period of time, when it
+    came back online, it may need to reconfigure itself based on new configuration settings
+3.  Register a DesiredProperty change handler to handle any changes of configuration
+    -   The handler will then send ReportedProperty back to server to update its status
+4.  Register a DirectMethod handler to handle any DirectMethod calls from IoT Hub
+    -   It aslo registered a DefaultMethodHandler to handle any DirectMethod call that has no delegate handler
+5.  Start Sending telemetry and Receiving commands 
+
 ## Run Sample
+
 -   Add AppSettings.Json with below configuration
 
 ```json
